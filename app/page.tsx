@@ -1,326 +1,70 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-type Ripple = {
-  id: number;
-  x: number;
-  y: number;
-};
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 const projects = [
-  {
-    title: "Northstar Studio",
-    description:
-      "A cinematic design system for a creative agency with modular product pages and immersive storytelling.",
-    stack: ["Next.js", "TypeScript", "Framer Motion"],
-    live: "https://vercel.com",
-    repo: "https://github.com",
-    accent: "linear-gradient(135deg, #0f2b4d 0%, #25c5ff 100%)",
-  },
-  {
-    title: "Tidal Commerce",
-    description:
-      "A polished e-commerce experience with fluid product discovery, checkout journeys, and animated interactions.",
-    stack: ["React", "Node.js", "Tailwind"],
-    live: "https://netlify.com",
-    repo: "https://github.com",
-    accent: "linear-gradient(135deg, #102748 0%, #5cf5d6 100%)",
-  },
-  {
-    title: "Moonlit Notes",
-    description:
-      "A journaling platform centered on calm visuals, thoughtful writing, and delightful micro-interactions.",
-    stack: ["Next.js", "Supabase", "PostgreSQL"],
-    live: "https://nextjs.org",
-    repo: "https://github.com",
-    accent: "linear-gradient(135deg, #081223 0%, #7ea8ff 100%)",
-  },
+  { n: "01", title: "Tideboard", type: "Analytics platform", desc: "A calm, clear dashboard that turns complex ocean-quality data into decisions communities can trust.", tech: ["Next.js", "TypeScript", "D3.js"], color: "a", link: "View case study" },
+  { n: "02", title: "Lunaria", type: "Commerce experience", desc: "An immersive storefront for a thoughtful skincare brand, designed around slow rituals and small details.", tech: ["React", "Shopify", "Framer"], color: "b", link: "Visit website" },
+  { n: "03", title: "Waypoint", type: "Travel companion", desc: "A beautifully simple mobile planning tool for building routes worth remembering.", tech: ["React Native", "Expo", "Maps API"], color: "c", link: "Explore project" },
 ];
 
-const skills = [
-  { name: "React", icon: "⚛" },
-  { name: "Next.js", icon: "▲" },
-  { name: "TypeScript", icon: "TS" },
-  { name: "Tailwind", icon: "T" },
-  { name: "UI Systems", icon: "▣" },
-  { name: "Design Thinking", icon: "✦" },
-];
+const skills = ["HTML", "CSS", "JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Figma"];
 
-const journey = [
-  { year: "This year", title: "First steps into web development", body: "I started exploring web development this year and began turning ideas into polished digital experiences." },
-  { year: "This year", title: "Building with curiosity", body: "I’m learning through hands-on projects, improving my design sense, and growing my confidence as a developer." },
-  { year: "This year", title: "Creating with intention", body: "I’m focusing on thoughtful interfaces, clean code, and projects that feel both modern and memorable." },
-];
-
-const highlights = [
-  { value: "1", label: "Finished project" },
-  { value: "3 days", label: "Experience so far" },
-  { value: "100%", label: "Care for detail" },
-];
+function Arrow() { return <span aria-hidden="true">↗</span>; }
 
 export default function Home() {
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [mouse, setMouse] = useState({ x: 0, y: 0 });
-  const [ripples, setRipples] = useState<Ripple[]>([]);
-  const [visibleSections, setVisibleSections] = useState<string[]>([]);
+  const [progress, setProgress] = useState(0);
+  const [cursor, setCursor] = useState({ x: -100, y: -100 });
+  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
+  const lastRipple = useRef(0);
+  const [sent, setSent] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0;
-      setScrollProgress(progress);
-    };
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setVisibleSections((prev: string[]) =>
-              prev.includes(entry.target.id) ? prev : [...prev, entry.target.id],
-            );
-          }
-        });
-      },
-      { threshold: 0.2 },
-    );
-
-    document.querySelectorAll(".reveal").forEach((element) => io.observe(element));
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      io.disconnect();
-      window.removeEventListener("scroll", handleScroll);
-    };
+    const update = () => setProgress(window.scrollY / Math.max(1, document.documentElement.scrollHeight - window.innerHeight));
+    const reveal = new IntersectionObserver((entries) => entries.forEach((entry) => entry.isIntersecting && entry.target.classList.add("visible")), { threshold: 0.12 });
+    document.querySelectorAll(".reveal").forEach((el) => reveal.observe(el));
+    window.addEventListener("scroll", update, { passive: true }); update();
+    return () => { window.removeEventListener("scroll", update); reveal.disconnect(); };
   }, []);
+  const submit = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); setSent(true); e.currentTarget.reset(); };
 
-  useEffect(() => {
-    const onMove = (event: MouseEvent) => {
-      setMouse({ x: event.clientX, y: event.clientY });
-      const id = Date.now() + Math.random();
-      setRipples((prev: Ripple[]) => [...prev, { id, x: event.clientX, y: event.clientY }]);
-      window.setTimeout(() => {
-        setRipples((prev: Ripple[]) => prev.filter((ripple: Ripple) => ripple.id !== id));
-      }, 700);
-    };
+  const move = (e: React.MouseEvent<HTMLElement>) => {
+    setCursor({ x: e.clientX, y: e.clientY });
+    if (e.clientY < window.innerHeight * .48 || Date.now() - lastRipple.current < 135) return;
+    lastRipple.current = Date.now();
+    const id = Date.now();
+    setRipples((current) => [...current.slice(-5), { id, x: e.clientX, y: e.clientY }]);
+    window.setTimeout(() => setRipples((current) => current.filter((ripple) => ripple.id !== id)), 1400);
+  };
 
-    window.addEventListener("mousemove", onMove);
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
+  return <main onMouseMove={move}>
+    <div className="scroll-progress" style={{ transform: `scaleX(${progress})` }} />
+    <div className="cursor-glow" style={{ transform: `translate(${cursor.x}px, ${cursor.y}px)` }} />
+    <div className="ripples" aria-hidden="true">{ripples.map((ripple) => <i key={ripple.id} style={{ left: ripple.x, top: ripple.y }} />)}</div>
+    <div className="stars" /><div className="shooting-star one" /><div className="shooting-star two" />
+    <nav className="nav"><a className="logo" href="#top">n<span>.</span></a><div className="nav-links"><a href="#work">Work</a><a href="#about">About</a><a href="#contact">Contact</a></div><a className="nav-cta" href="#contact">Let&apos;s talk <Arrow /></a></nav>
 
-  return (
-    <main className="portfolio-shell">
-      <div className="scroll-progress" style={{ width: `${scrollProgress}%` }} />
-      <div className="cursor-glow" style={{ transform: `translate(${mouse.x}px, ${mouse.y}px)` }} />
-      <div className="ripple-layer">
-        {ripples.map((ripple) => (
-          <span
-            key={ripple.id}
-            className="water-ripple"
-            style={{ left: ripple.x, top: ripple.y }}
-          />
-        ))}
-      </div>
+    <section className="hero" id="top">
+      <div className="moon"><i /><i /><i /></div><div className="moon-reflection" />
+      <div className="cloud cloud-one" /><div className="cloud cloud-two" />
+      <div className="hero-copy"><p className="eyebrow">PORTFOLIO · 2025</p><h1>Hi, I&apos;m <em>Nova.</em><br />I build calm, memorable<br />digital experiences.</h1><p className="intro">A creative developer turning thoughtful ideas into expressive, high-performing websites and products.</p><a href="#work" className="primary">Explore my work <Arrow /></a></div>
+      <p className="scroll-note">SCROLL TO DRIFT <b>↓</b></p><div className="ocean"><div className="wave wave-1" /><div className="wave wave-2" /><div className="wave wave-3" /></div>
+    </section>
 
-      <section className="hero reveal visible" id="home">
-        <nav className="top-nav">
-          <a href="#home" className="brand-mark">A</a>
-          <div className="nav-links">
-            <a href="#about">About</a>
-            <a href="#projects">Projects</a>
-            <a href="#contact">Contact</a>
-          </div>
-        </nav>
+    <section className="section projects" id="work"><div className="section-head reveal"><p className="eyebrow">SELECTED WORK · 01 — 03</p><h2>Made with care,<br /><em>built for people.</em></h2><p>I partner with ideas that deserve a distinctive place in the world.</p></div>
+      <div className="project-list">{projects.map((p, i) => <article className={`project reveal ${p.color}`} key={p.title} style={{ transitionDelay: `${i * 90}ms` }}><div className="project-preview"><div className="preview-top"><span>◉</span><span>◌</span><span>◒</span></div><div className="preview-ui"><b>{p.title}</b><div className="fake-chart"><i /><i /><i /><i /><i /><i /></div><div className="fake-lines"><i /><i /><i /></div></div><div className="preview-orb" /></div><div className="project-info"><div><span className="project-num">{p.n}</span><p className="eyebrow">{p.type}</p><h3>{p.title}</h3><p>{p.desc}</p><ul>{p.tech.map((t) => <li key={t}>{t}</li>)}</ul></div><div className="project-actions"><a href="#contact">{p.link} <Arrow /></a><a href="https://github.com" target="_blank">GitHub <Arrow /></a></div></div></article>)}</div>
+    </section>
 
-        <div className="hero-content">
-          <p className="eyebrow">Developer • crafting calm, luminous web experiences</p>
-          <h1>
-            Hi, I’m <span>Zachary Chen</span>.
-          </h1>
-          <p className="hero-copy">
-            I’m a growing developer building thoughtful digital experiences with a focus on clarity, simplicity, and polished design.
-          </p>
-          <div className="hero-actions">
-            <a className="primary-btn" href="#projects">
-              Explore my work
-            </a>
-            <a className="secondary-btn" href="#about">
-              Learn more
-            </a>
-          </div>
-          <div className="hero-stats">
-            {highlights.map((item) => (
-              <div key={item.label} className="stat-pill">
-                <strong>{item.value}</strong>
-                <span>{item.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+    <section className="section about" id="about"><div className="about-visual reveal"><div className="portrait"><div className="portrait-sun" /><span>◒</span></div><p>BASED ON THE EAST COAST<br />WORKING EVERYWHERE</p></div><div className="about-copy reveal"><p className="eyebrow">A LITTLE ABOUT ME</p><h2>I care about the feeling <em>between</em> the pixels.</h2><p>I&apos;m a developer and designer who loves the delicate meeting point of precision and personality. I build with curiosity, sweat the details, and believe the best digital spaces leave you a little brighter than they found you.</p><a className="text-link" href="#contact">More about my process <Arrow /></a></div></section>
 
-        <div className="hero-visual" aria-hidden="true">
-          <div className="moon" />
-          <div className="cloud cloud-a" />
-          <div className="cloud cloud-b" />
-          <div className="wave wave-a" />
-          <div className="wave wave-b" />
-          <div className="wave wave-c" />
-        </div>
-      </section>
+    <section className="section skills-section"><div className="section-head narrow reveal"><p className="eyebrow">THE TOOLKIT</p><h2>Fluent in the<br /><em>languages of the web.</em></h2></div><div className="skill-grid reveal">{skills.map((skill, i) => <div className="skill" key={skill}><span>{["◇", "✦", "⌁", "◒", "⚛", "▲", "⬡", "◈"][i]}</span>{skill}</div>)}</div></section>
 
-      <section className={`section reveal ${visibleSections.includes("about") ? "visible" : ""}`} id="about">
-        <div className="section-heading">
-          <p className="eyebrow">About me</p>
-          <h2>Building graceful digital experiences with purpose.</h2>
-        </div>
-        <div className="about-grid">
-          <div className="panel">
-            <p>
-              I’m a developer who is still building my experience, but I already care deeply about creating elegant,
-              user-friendly digital work with a calm and modern feel.
-            </p>
-            <p>
-              I’m focused on learning quickly, refining the details of each project, and creating experiences that feel
-              thoughtful and memorable.
-            </p>
-          </div>
-          <div className="panel highlight-panel">
-            <h3>Currently focused on</h3>
-            <ul>
-              <li>Beautiful interfaces with responsive layouts</li>
-              <li>Fast, elegant front-end experiences</li>
-              <li>Thoughtful systems that scale with the product</li>
-            </ul>
-          </div>
-        </div>
-      </section>
+    <section className="section journey"><div className="section-head reveal"><p className="eyebrow">THE CURRENT SO FAR</p><h2>A small timeline<br />of <em>big curiosity.</em></h2></div><div className="timeline reveal">{[["2021", "First line of code", "Fell in love with the magic of making something from nothing."], ["2022", "Design meets development", "Started crafting websites for people with ideas worth sharing."], ["2024", "Building independently", "Shipped products, collaborated with lovely teams, never stopped learning."], ["NOW", "Looking toward the horizon", "Creating work that makes the internet feel more human."]].map(([year, title, desc]) => <div className="moment" key={year}><b>{year}</b><div><i /><h3>{title}</h3><p>{desc}</p></div></div>)}</div></section>
 
-      <section className={`section reveal ${visibleSections.includes("skills") ? "visible" : ""}`} id="skills">
-        <div className="section-heading">
-          <p className="eyebrow">Skills</p>
-          <h2>Tools and disciplines that power my work.</h2>
-        </div>
-        <div className="skills-grid">
-          {skills.map((skill) => (
-            <article key={skill.name} className="skill-card">
-              <div className="skill-icon">{skill.icon}</div>
-              <h3>{skill.name}</h3>
-            </article>
-          ))}
-        </div>
-      </section>
+    <section className="section achievements reveal"><p className="eyebrow">SOME NUMBERS, GENTLY</p><div className="achievement-grid"><div><strong>24<span>+</span></strong><p>projects brought to life</p></div><div><strong>3<span>+</span></strong><p>years of focused craft</p></div><div><strong>12<span>k</span></strong><p>lines written with love</p></div><div><strong>∞</strong><p>ideas still to explore</p></div></div></section>
 
-      <section className={`section reveal ${visibleSections.includes("journey") ? "visible" : ""}`} id="journey">
-        <div className="section-heading">
-          <p className="eyebrow">Programming journey</p>
-          <h2>A timeline of how my craft has grown.</h2>
-        </div>
-        <div className="timeline">
-          {journey.map((step) => (
-            <div key={step.year} className="timeline-card">
-              <span>{step.year}</span>
-              <h3>{step.title}</h3>
-              <p>{step.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+    <section className="section gallery"><div className="section-head reveal"><p className="eyebrow">IN THE WILD</p><h2>Little glimpses<br />of the <em>work.</em></h2></div><div className="gallery-grid reveal">{"tall", "wide", "small", "small two", "wide last"}.map((c, i) => <div key={c} className={`gallery-card ${c}`}><span>{["01 / TIDEBOARD", "02 / LUNARIA", "03 / WAYPOINT", "04 / EDITORIAL", "05 / OCEAN NOTES"][i]}</span><div /></div>)</div></section>
 
-      <section className={`section reveal ${visibleSections.includes("achievements") ? "visible" : ""}`} id="achievements">
-        <div className="section-heading">
-          <p className="eyebrow">Achievements</p>
-          <h2>Milestones that shape the work I create.</h2>
-        </div>
-        <div className="achievements-grid">
-          <article className="panel achievement-card">
-            <h3>1 finished project</h3>
-            <p>Built a complete project that reflects my current style and growing development skills.</p>
-          </article>
-          <article className="panel achievement-card">
-            <h3>3 days of experience</h3>
-            <p>My work is still early, but I’m learning quickly and applying each lesson with care.</p>
-          </article>
-          <article className="panel achievement-card">
-            <h3>Detail-first approach</h3>
-            <p>Every interface is shaped to feel calm, intuitive, and memorable from the first glance onward.</p>
-          </article>
-        </div>
-      </section>
-
-      <section className={`section reveal ${visibleSections.includes("projects") ? "visible" : ""}`} id="projects">
-        <div className="section-heading">
-          <p className="eyebrow">Featured projects</p>
-          <h2>Selected work that reflects my creative direction.</h2>
-        </div>
-        <div className="projects-grid">
-          {projects.map((project) => (
-            <article key={project.title} className="project-card">
-              <div className="project-preview" style={{ background: project.accent }}>
-                <div className="screen-top" />
-                <div className="screen-body">
-                  <div className="screen-bar" />
-                  <div className="screen-bar short" />
-                  <div className="screen-card" />
-                </div>
-              </div>
-              <div className="project-content">
-                <h3>{project.title}</h3>
-                <p>{project.description}</p>
-                <div className="tech-list">
-                  {project.stack.map((tech) => (
-                    <span key={tech}>{tech}</span>
-                  ))}
-                </div>
-                <div className="card-actions">
-                  <a href={project.live} target="_blank" rel="noreferrer">
-                    Live site
-                  </a>
-                  <a href={project.repo} target="_blank" rel="noreferrer">
-                    GitHub
-                  </a>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className={`section reveal ${visibleSections.includes("gallery") ? "visible" : ""}`} id="gallery">
-        <div className="section-heading">
-          <p className="eyebrow">Gallery</p>
-          <h2>Moments from recent work and explorations.</h2>
-        </div>
-        <div className="gallery-grid">
-          <div className="gallery-card tall" />
-          <div className="gallery-card" />
-          <div className="gallery-card" />
-        </div>
-      </section>
-
-      <section className={`section reveal ${visibleSections.includes("contact") ? "visible" : ""}`} id="contact">
-        <div className="section-heading">
-          <p className="eyebrow">Contact</p>
-          <h2>Let’s build something beautiful together.</h2>
-        </div>
-        <div className="contact-grid">
-          <form className="contact-form" onSubmit={(event) => event.preventDefault()}>
-            <input type="text" placeholder="Your name" />
-            <input type="email" placeholder="Your email" />
-            <textarea placeholder="Tell me about your idea" rows={5} />
-            <button type="submit">Send message</button>
-          </form>
-          <div className="contact-links">
-            <a href="mailto:alex@example.com">alex@example.com</a>
-            <a href="https://github.com" target="_blank" rel="noreferrer">
-              GitHub
-            </a>
-            <a href="https://www.linkedin.com" target="_blank" rel="noreferrer">
-              LinkedIn
-            </a>
-          </div>
-        </div>
-      </section>
-    </main>
-  );
+    <section className="contact" id="contact"><div className="contact-glow" /><div className="contact-copy reveal"><p className="eyebrow">SEND A SIGNAL</p><h2>Let&apos;s make<br />some <em>waves.</em></h2><p>Have an idea, a collaboration, or just want to say hello? My inbox is always open.</p><a href="mailto:hello@novamakes.dev">hello@novamakes.dev <Arrow /></a><div className="socials"><a href="https://github.com">GitHub</a><a href="https://linkedin.com">LinkedIn</a><a href="https://instagram.com">Instagram</a></div></div><form className="contact-form reveal" onSubmit={submit}><label>Your name<input required placeholder="What should I call you?" /></label><label>Email address<input required type="email" placeholder="you@example.com" /></label><label>Tell me a little about it<textarea required placeholder="A new project, a wild idea..." /></label><button className="primary" type="submit">{sent ? "Message sent — thank you!" : "Send it into the sea"} <Arrow /></button></form><footer>© 2025 NOVA. MADE UNDER A MOONLIT SKY. <a href="#top">BACK TO THE TOP ↑</a></footer></section>
+  </main>;
 }
