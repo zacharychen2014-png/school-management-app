@@ -1,64 +1,326 @@
 "use client";
 
-import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useEffect, useState } from "react";
 
-type Page = "Dashboard" | "My Library" | "Friends" | "Achievements" | "Statistics" | "Profile" | "Settings";
-type Game = { id:string; title:string; genre:string; platform:string; hours:number; progress:number; last:string; art:string; icon:string; description:string; achievements:number; achievementTotal:number; rating:number; notes:string };
-type Friend = { id:string; name:string; initials:string; online:boolean; playing:string; favorite:string; owned:number; completed:number; hundred:number; last:string; recommendation:{ game:string; rating:number; review:string } };
-type Settings = { username:string; dark:boolean; wallpaper:string; avatar:string };
-type Stats = { total:number; completed:number; backlog:number; hours:number; fav:string; platform:string; pct:number };
+type Ripple = {
+  id: number;
+  x: number;
+  y: number;
+};
 
-const genres = ["All Games","Horror","RPG","Puzzle","Action","Adventure","Shooter","Strategy","Simulation","Platformer","Survival","Racing","Sports"];
-const seedGames: Game[] = [
-  {id:"ghost",title:"Ghost of Tsushima",genre:"Adventure",platform:"PlayStation 5",hours:42.5,progress:74,last:"2 days ago",art:"ghost",icon:"侍",description:"Forge a new path and wage an unconventional war for the freedom of Tsushima.",achievements:38,achievementTotal:52,rating:5,notes:"Finish the Iki Island stories before the finale."},
-  {id:"baldur",title:"Baldur's Gate 3",genre:"RPG",platform:"PC",hours:91.2,progress:58,last:"Yesterday",art:"baldur",icon:"Ⅲ",description:"Gather your party and return to the Forgotten Realms in a tale of fellowship and betrayal.",achievements:28,achievementTotal:54,rating:5,notes:"Romancing Shadowheart. Need to visit Moonrise."},
-  {id:"hades",title:"Hades",genre:"Action",platform:"Nintendo Switch",hours:34.8,progress:100,last:"1 week ago",art:"hades",icon:"♜",description:"Defy the god of the dead as you hack and slash out of the Underworld.",achievements:49,achievementTotal:49,rating:5,notes:"100% complete — a perfect roguelike."},
-  {id:"last",title:"The Last of Us Part II",genre:"Survival",platform:"PlayStation 5",hours:26.1,progress:45,last:"3 days ago",art:"last",icon:"Ⅱ",description:"Experience the devastating consequences of Ellie and Joel's actions in a dangerous post-pandemic world.",achievements:12,achievementTotal:26,rating:4,notes:"Take it slow. The atmosphere is incredible."},
-  {id:"forza",title:"Forza Horizon 5",genre:"Racing",platform:"Xbox Series X",hours:18.4,progress:21,last:"2 weeks ago",art:"forza",icon:"FH",description:"Explore the vibrant open world landscapes of Mexico in the world's greatest cars.",achievements:11,achievementTotal:53,rating:4,notes:"Favourite car: 2020 Toyota Supra."},
-  {id:"animal",title:"Animal Crossing",genre:"Simulation",platform:"Nintendo Switch",hours:67.3,progress:82,last:"Last month",art:"animal",icon:"◉",description:"Escape to a deserted island and create your own paradise.",achievements:19,achievementTotal:25,rating:4,notes:"Redesign the west beach."},
-  {id:"inside",title:"INSIDE",genre:"Puzzle",platform:"PC",hours:4.5,progress:100,last:"3 months ago",art:"inside",icon:"●",description:"A dark narrative platformer about a boy alone and hunted.",achievements:14,achievementTotal:14,rating:5,notes:"That ending."},
-  {id:"doom",title:"DOOM Eternal",genre:"Shooter",platform:"PC",hours:16.2,progress:63,last:"4 days ago",art:"doom",icon:"D",description:"Hell's armies have invaded Earth. Become the Slayer and rip and tear.",achievements:18,achievementTotal:33,rating:4,notes:"Practice quick-switch combos."},
+const projects = [
+  {
+    title: "Northstar Studio",
+    description:
+      "A cinematic design system for a creative agency with modular product pages and immersive storytelling.",
+    stack: ["Next.js", "TypeScript", "Framer Motion"],
+    live: "https://vercel.com",
+    repo: "https://github.com",
+    accent: "linear-gradient(135deg, #0f2b4d 0%, #25c5ff 100%)",
+  },
+  {
+    title: "Tidal Commerce",
+    description:
+      "A polished e-commerce experience with fluid product discovery, checkout journeys, and animated interactions.",
+    stack: ["React", "Node.js", "Tailwind"],
+    live: "https://netlify.com",
+    repo: "https://github.com",
+    accent: "linear-gradient(135deg, #102748 0%, #5cf5d6 100%)",
+  },
+  {
+    title: "Moonlit Notes",
+    description:
+      "A journaling platform centered on calm visuals, thoughtful writing, and delightful micro-interactions.",
+    stack: ["Next.js", "Supabase", "PostgreSQL"],
+    live: "https://nextjs.org",
+    repo: "https://github.com",
+    accent: "linear-gradient(135deg, #081223 0%, #7ea8ff 100%)",
+  },
 ];
-const seedFriends: Friend[] = [
-  {id:"sam",name:"Sam Rivera",initials:"SR",online:true,playing:"Baldur's Gate 3",favorite:"Hades",owned:73,completed:31,hundred:8,last:"Playing now",recommendation:{game:"Sea of Stars",rating:5,review:"Beautiful world, sharp combat, and the music is unforgettable."}},
-  {id:"jamie",name:"Jamie Park",initials:"JP",online:false,playing:"",favorite:"The Legend of Zelda: TOTK",owned:56,completed:24,hundred:12,last:"2 days ago",recommendation:{game:"Tunic",rating:4,review:"Go in blind and let the little mysteries surprise you."}},
+
+const skills = [
+  { name: "React", icon: "⚛" },
+  { name: "Next.js", icon: "▲" },
+  { name: "TypeScript", icon: "TS" },
+  { name: "Tailwind", icon: "T" },
+  { name: "UI Systems", icon: "▣" },
+  { name: "Design Thinking", icon: "✦" },
 ];
 
-function Icon({name,size=19}:{name:string;size?:number}) { const icons:Record<string,ReactNode>={grid:<><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></>,library:<><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5A2.5 2.5 0 0 0 17.5 16H4z"/><path d="M4 5.5v13A2.5 2.5 0 0 0 6.5 21H20"/></>,friends:<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,trophy:<><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a4 4 0 0 0 4 4M17 6h3v1a4 4 0 0 1-4 4"/></>,chart:<><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></>,user:<><circle cx="12" cy="7" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>,settings:<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34M4.6 9a1.7 1.7 0 0 0-.34-1.88L4.2 7.06 6.32 4.94l.06.06a1.7 1.7 0 0 0 1.88.34M12 2v3M12 19v3M2 12h3M19 12h3"/></>,search:<><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></>,bell:<path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 22h4"/>,chevron:<path d="m9 18 6-6-6-6"/>,back:<path d="m15 18-6-6 6-6"/>,play:<path d="m9 6 9 6-9 6z" fill="currentColor" stroke="none"/>,more:<><circle cx="5" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="19" cy="12" r="1" fill="currentColor"/></>,plus:<path d="M12 5v14M5 12h14"/>,moon:<path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2z"/>,sun:<><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2"/></>,edit:<><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></>,close:<path d="M18 6 6 18M6 6l12 12"/>,check:<path d="m5 12 4 4L19 6"/>,trash:<><path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6"/></>,sort:<><path d="M4 7h10M4 12h7M4 17h4M17 5v14M14 8l3-3 3 3M20 16l-3 3-3-3"/></>}; return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{icons[name]}</svg> }
-const initials=(name:string)=>name.split(" ").map(x=>x[0]).slice(0,2).join("").toUpperCase();
-const save=(key:string,value:unknown)=>localStorage.setItem(key,JSON.stringify(value));
-const read=(key:string,fallback:Game[]|Friend[]|Settings)=>{if(typeof window==="undefined")return fallback;try{const value=localStorage.getItem(key);return value?JSON.parse(value):fallback}catch{return fallback}};
+const journey = [
+  { year: "This year", title: "First steps into web development", body: "I started exploring web development this year and began turning ideas into polished digital experiences." },
+  { year: "This year", title: "Building with curiosity", body: "I’m learning through hands-on projects, improving my design sense, and growing my confidence as a developer." },
+  { year: "This year", title: "Creating with intention", body: "I’m focusing on thoughtful interfaces, clean code, and projects that feel both modern and memorable." },
+];
 
-export default function Home(){
- const [page,setPage]=useState<Page>("Dashboard"),[games,setGames]=useState<Game[]>(()=>read("gv-games",seedGames) as Game[]),[friends,setFriends]=useState<Friend[]>(()=>read("gv-friends",seedFriends) as Friend[]),[settings,setSettings]=useState<Settings>(()=>read("gv-settings",{username:"Alex Morgan",dark:false,wallpaper:"none",avatar:"AM"}) as Settings),[query,setQuery]=useState(""),[genre,setGenre]=useState("All Games"),[sort,setSort]=useState("recent"),[selected,setSelected]=useState<Game|null>(null),[modal,setModal]=useState<"add"|"settings"|"friend"|null>(null),[friendView,setFriendView]=useState<Friend|null>(null),[notice,setNotice]=useState("");
- useEffect(()=>{save("gv-games",games)},[games]);useEffect(()=>{save("gv-friends",friends)},[friends]);useEffect(()=>{save("gv-settings",settings)},[settings]);
- const stats=useMemo(()=>{const total=games.length,completed=games.filter(g=>g.progress===100).length,backlog=games.filter(g=>g.progress===0).length,hours=games.reduce((a,g)=>a+g.hours,0), fav=Object.entries(games.reduce<Record<string,number>>((a,g)=>(a[g.genre]=(a[g.genre]||0)+1,a),{})).sort((a,b)=>b[1]-a[1])[0]?.[0]||"—",platform=Object.entries(games.reduce<Record<string,number>>((a,g)=>(a[g.platform]=(a[g.platform]||0)+g.hours,a),{})).sort((a,b)=>b[1]-a[1])[0]?.[0]||"—";return{total,completed,backlog,hours,fav,platform,pct:total?Math.round(completed/total*100):0}},[games]);
- const list=useMemo(()=>games.filter(g=>(genre==="All Games"||g.genre===genre)&&g.title.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>sort==="title"?a.title.localeCompare(b.title):sort==="hours"?b.hours-a.hours:sort==="progress"?b.progress-a.progress:0),[games,genre,query,sort]);
- const go=(p:Page)=>{setPage(p);setSelected(null);setQuery("");setGenre("All Games")}; const toast=(x:string)=>{setNotice(x);setTimeout(()=>setNotice(""),2200)};
- const updateGame=(g:Game)=>{setGames(x=>x.map(v=>v.id===g.id?g:v));setSelected(g)};
- const shell=(child:ReactNode)=><main className={`app ${settings.dark?"dark":""} wallpaper-${settings.wallpaper}`}><aside className="sidebar"><button className="brand brand-button" onClick={()=>go("Dashboard")}><span className="brand-mark"><span/></span><span>game<span>vault</span></span></button><nav>{([["Dashboard","grid"],["My Library","library"],["Friends","friends"],["Achievements","trophy"],["Statistics","chart"],["Profile","user"]] as [Page,string][]).map(([l,i])=><button key={l} className={`nav-item ${page===l?"active":""}`} onClick={()=>go(l)}><Icon name={i}/>{l}</button>)}</nav><div className="side-bottom"><button className="nav-item" onClick={()=>setModal("settings")}><Icon name="settings"/>Settings</button><button className="profile-small" onClick={()=>go("Profile")}><div className="avatar alex">{settings.avatar}</div><div><strong>{settings.username}</strong><span>Level 24</span></div><Icon name="more" size={18}/></button></div></aside><section className="content"><header><div className="headline"><p>{page==="Dashboard"?"Your personal collection":page}</p><h1>{page==="Dashboard"?<>Good evening, {settings.username.split(" ")[0]} <span>👋</span></>:page}</h1></div><div className="top-actions"><button className="icon-button" onClick={()=>toast("You’re all caught up!")}><Icon name="bell"/><i/></button><button className="profile-button" onClick={()=>go("Profile")}><div className="avatar alex">{settings.avatar}</div><Icon name="chevron" size={16}/></button></div></header>{child}</section>{modal&&<Modal kind={modal} close={()=>setModal(null)} games={games} setGames={setGames} friends={friends} setFriends={setFriends} settings={settings} setSettings={setSettings} toast={toast}/>} {selected&&<GameDetail game={selected} close={()=>setSelected(null)} update={updateGame} remove={()=>{setGames(x=>x.filter(g=>g.id!==selected.id));setSelected(null);toast("Game removed from your vault")}}/>}{friendView&&<FriendProfile friend={friendView} close={()=>setFriendView(null)} remove={()=>{setFriends(x=>x.filter(f=>f.id!==friendView.id));setFriendView(null);toast("Friend removed")}}/>}{notice&&<div className="toast">{notice}</div>}</main>;
- if(page==="Friends")return shell(<Friends friends={friends} open={setFriendView} add={()=>setModal("friend")} remove={id=>{setFriends(x=>x.filter(f=>f.id!==id));toast("Friend removed")}}/>);
- if(page==="Statistics"||page==="Achievements")return shell(<Statistics stats={stats} games={games} achievements={page==="Achievements"}/>);
- if(page==="Profile")return shell(<Profile settings={settings} stats={stats} games={games} edit={()=>setModal("settings")}/>);
- if(page==="Settings")return shell(<SettingsPage settings={settings} edit={()=>setModal("settings")}/>);
- if(page==="My Library")return shell(<Library list={list} genre={genre} setGenre={setGenre} query={query} setQuery={setQuery} sort={sort} setSort={setSort} open={setSelected} add={()=>setModal("add")}/>);
- return shell(<Dashboard games={games} stats={stats} genre={genre} setGenre={setGenre} query={query} setQuery={setQuery} open={setSelected} add={()=>setModal("add")} statsPage={()=>go("Statistics")}/>);
+const highlights = [
+  { value: "1", label: "Finished project" },
+  { value: "3 days", label: "Experience so far" },
+  { value: "100%", label: "Care for detail" },
+];
+
+export default function Home() {
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const [ripples, setRipples] = useState<Ripple[]>([]);
+  const [visibleSections, setVisibleSections] = useState<string[]>([]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0;
+      setScrollProgress(progress);
+    };
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisibleSections((prev: string[]) =>
+              prev.includes(entry.target.id) ? prev : [...prev, entry.target.id],
+            );
+          }
+        });
+      },
+      { threshold: 0.2 },
+    );
+
+    document.querySelectorAll(".reveal").forEach((element) => io.observe(element));
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      io.disconnect();
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onMove = (event: MouseEvent) => {
+      setMouse({ x: event.clientX, y: event.clientY });
+      const id = Date.now() + Math.random();
+      setRipples((prev: Ripple[]) => [...prev, { id, x: event.clientX, y: event.clientY }]);
+      window.setTimeout(() => {
+        setRipples((prev: Ripple[]) => prev.filter((ripple: Ripple) => ripple.id !== id));
+      }, 700);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
+
+  return (
+    <main className="portfolio-shell">
+      <div className="scroll-progress" style={{ width: `${scrollProgress}%` }} />
+      <div className="cursor-glow" style={{ transform: `translate(${mouse.x}px, ${mouse.y}px)` }} />
+      <div className="ripple-layer">
+        {ripples.map((ripple) => (
+          <span
+            key={ripple.id}
+            className="water-ripple"
+            style={{ left: ripple.x, top: ripple.y }}
+          />
+        ))}
+      </div>
+
+      <section className="hero reveal visible" id="home">
+        <nav className="top-nav">
+          <a href="#home" className="brand-mark">A</a>
+          <div className="nav-links">
+            <a href="#about">About</a>
+            <a href="#projects">Projects</a>
+            <a href="#contact">Contact</a>
+          </div>
+        </nav>
+
+        <div className="hero-content">
+          <p className="eyebrow">Developer • crafting calm, luminous web experiences</p>
+          <h1>
+            Hi, I’m <span>Zachary Chen</span>.
+          </h1>
+          <p className="hero-copy">
+            I’m a growing developer building thoughtful digital experiences with a focus on clarity, simplicity, and polished design.
+          </p>
+          <div className="hero-actions">
+            <a className="primary-btn" href="#projects">
+              Explore my work
+            </a>
+            <a className="secondary-btn" href="#about">
+              Learn more
+            </a>
+          </div>
+          <div className="hero-stats">
+            {highlights.map((item) => (
+              <div key={item.label} className="stat-pill">
+                <strong>{item.value}</strong>
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="hero-visual" aria-hidden="true">
+          <div className="moon" />
+          <div className="cloud cloud-a" />
+          <div className="cloud cloud-b" />
+          <div className="wave wave-a" />
+          <div className="wave wave-b" />
+          <div className="wave wave-c" />
+        </div>
+      </section>
+
+      <section className={`section reveal ${visibleSections.includes("about") ? "visible" : ""}`} id="about">
+        <div className="section-heading">
+          <p className="eyebrow">About me</p>
+          <h2>Building graceful digital experiences with purpose.</h2>
+        </div>
+        <div className="about-grid">
+          <div className="panel">
+            <p>
+              I’m a developer who is still building my experience, but I already care deeply about creating elegant,
+              user-friendly digital work with a calm and modern feel.
+            </p>
+            <p>
+              I’m focused on learning quickly, refining the details of each project, and creating experiences that feel
+              thoughtful and memorable.
+            </p>
+          </div>
+          <div className="panel highlight-panel">
+            <h3>Currently focused on</h3>
+            <ul>
+              <li>Beautiful interfaces with responsive layouts</li>
+              <li>Fast, elegant front-end experiences</li>
+              <li>Thoughtful systems that scale with the product</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section className={`section reveal ${visibleSections.includes("skills") ? "visible" : ""}`} id="skills">
+        <div className="section-heading">
+          <p className="eyebrow">Skills</p>
+          <h2>Tools and disciplines that power my work.</h2>
+        </div>
+        <div className="skills-grid">
+          {skills.map((skill) => (
+            <article key={skill.name} className="skill-card">
+              <div className="skill-icon">{skill.icon}</div>
+              <h3>{skill.name}</h3>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className={`section reveal ${visibleSections.includes("journey") ? "visible" : ""}`} id="journey">
+        <div className="section-heading">
+          <p className="eyebrow">Programming journey</p>
+          <h2>A timeline of how my craft has grown.</h2>
+        </div>
+        <div className="timeline">
+          {journey.map((step) => (
+            <div key={step.year} className="timeline-card">
+              <span>{step.year}</span>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className={`section reveal ${visibleSections.includes("achievements") ? "visible" : ""}`} id="achievements">
+        <div className="section-heading">
+          <p className="eyebrow">Achievements</p>
+          <h2>Milestones that shape the work I create.</h2>
+        </div>
+        <div className="achievements-grid">
+          <article className="panel achievement-card">
+            <h3>1 finished project</h3>
+            <p>Built a complete project that reflects my current style and growing development skills.</p>
+          </article>
+          <article className="panel achievement-card">
+            <h3>3 days of experience</h3>
+            <p>My work is still early, but I’m learning quickly and applying each lesson with care.</p>
+          </article>
+          <article className="panel achievement-card">
+            <h3>Detail-first approach</h3>
+            <p>Every interface is shaped to feel calm, intuitive, and memorable from the first glance onward.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className={`section reveal ${visibleSections.includes("projects") ? "visible" : ""}`} id="projects">
+        <div className="section-heading">
+          <p className="eyebrow">Featured projects</p>
+          <h2>Selected work that reflects my creative direction.</h2>
+        </div>
+        <div className="projects-grid">
+          {projects.map((project) => (
+            <article key={project.title} className="project-card">
+              <div className="project-preview" style={{ background: project.accent }}>
+                <div className="screen-top" />
+                <div className="screen-body">
+                  <div className="screen-bar" />
+                  <div className="screen-bar short" />
+                  <div className="screen-card" />
+                </div>
+              </div>
+              <div className="project-content">
+                <h3>{project.title}</h3>
+                <p>{project.description}</p>
+                <div className="tech-list">
+                  {project.stack.map((tech) => (
+                    <span key={tech}>{tech}</span>
+                  ))}
+                </div>
+                <div className="card-actions">
+                  <a href={project.live} target="_blank" rel="noreferrer">
+                    Live site
+                  </a>
+                  <a href={project.repo} target="_blank" rel="noreferrer">
+                    GitHub
+                  </a>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className={`section reveal ${visibleSections.includes("gallery") ? "visible" : ""}`} id="gallery">
+        <div className="section-heading">
+          <p className="eyebrow">Gallery</p>
+          <h2>Moments from recent work and explorations.</h2>
+        </div>
+        <div className="gallery-grid">
+          <div className="gallery-card tall" />
+          <div className="gallery-card" />
+          <div className="gallery-card" />
+        </div>
+      </section>
+
+      <section className={`section reveal ${visibleSections.includes("contact") ? "visible" : ""}`} id="contact">
+        <div className="section-heading">
+          <p className="eyebrow">Contact</p>
+          <h2>Let’s build something beautiful together.</h2>
+        </div>
+        <div className="contact-grid">
+          <form className="contact-form" onSubmit={(event) => event.preventDefault()}>
+            <input type="text" placeholder="Your name" />
+            <input type="email" placeholder="Your email" />
+            <textarea placeholder="Tell me about your idea" rows={5} />
+            <button type="submit">Send message</button>
+          </form>
+          <div className="contact-links">
+            <a href="mailto:alex@example.com">alex@example.com</a>
+            <a href="https://github.com" target="_blank" rel="noreferrer">
+              GitHub
+            </a>
+            <a href="https://www.linkedin.com" target="_blank" rel="noreferrer">
+              LinkedIn
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
 }
-
-function Cover({game,feature=false}:{game:Game;feature?:boolean}){return <div className={`${feature?"feature-cover":"cover"} ${game.art}`}><span>{game.icon}</span>{!feature&&<b>{game.genre}</b>}<em>{game.title}</em></div>}
-function Search({query,setQuery}:{query:string;setQuery:(x:string)=>void}){return <label className="search"><Icon name="search"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search your library..."/>{query&&<button onClick={()=>setQuery("")}><Icon name="close" size={16}/></button>}</label>}
-function Dashboard({games,stats,genre,setGenre,query,setQuery,open,add,statsPage}:{games:Game[];stats:Stats;genre:string;setGenre:(x:string)=>void;query:string;setQuery:(x:string)=>void;open:(g:Game)=>void;add:()=>void;statsPage:()=>void}){const list=games.filter(g=>(genre==="All Games"||g.genre===genre)&&g.title.toLowerCase().includes(query.toLowerCase()));const current=list[0]||games[0];return <><div className="search-row"><Search query={query} setQuery={setQuery}/><button className="add-game" onClick={add}><Icon name="plus" size={18}/>Add Game</button></div><Genres genre={genre} setGenre={setGenre}/><StatCards stats={stats}/><div className="main-grid"><div className="library-area"><div className="section-heading"><div><h2>Continue Playing</h2><p>Pick up where you left off</p></div><button onClick={()=>document.getElementById("all-games")?.scrollIntoView({behavior:"smooth"})}>View all <Icon name="chevron" size={16}/></button></div><GameGrid games={list.slice(0,4)} open={open}/></div>{current&&<aside className="now-playing"><div className="section-heading"><div><h2>Now Playing</h2><p>Your current game</p></div></div><button className="feature-button" onClick={()=>open(current)}><Cover game={current} feature/></button><h2 className="feature-title">{current.title}</h2><p className="feature-meta">{current.genre} <i/> {current.platform}</p><Progress game={current}/><div className="achievement"><span>🏆</span><div><strong>Achievements</strong><p>{current.achievements} of {current.achievementTotal} unlocked</p></div><b>{Math.round(current.achievements/current.achievementTotal*100)}%</b></div></aside>}</div><section className="lower" id="all-games"><div className="section-heading"><div><h2>Library Insights</h2><p>How you play</p></div><button onClick={statsPage}>See detailed stats <Icon name="chevron" size={16}/></button></div><Insights stats={stats}/></section></>}
-function Genres({genre,setGenre}:{genre:string;setGenre:(x:string)=>void}){return <div className="genre-row">{genres.map(x=><button key={x} onClick={()=>setGenre(x)} className={`genre ${genre===x?"active":""}`}>{x}</button>)}</div>}
-function StatCards({stats}:{stats:Stats}){return <div className="stats">{[["Total Games",stats.total,"In your vault","purple"],["Games Completed",stats.completed,`${stats.pct}% completion rate`,`green`],["In Backlog",stats.backlog,"Ready when you are","orange"],["Total Play Hours",stats.hours.toFixed(1),"Across all platforms","blue"]].map(([l,n,s,c])=><div className="stat-card" key={String(l)}><span className={`stat-icon ${c}`}/><p>{l}</p><h2>{n}</h2><small>{s}</small></div>)}</div>}
-function GameGrid({games,open}:{games:Game[];open:(g:Game)=>void}){return <div className="game-grid">{games.map(g=><button className="game-card" key={g.id} onClick={()=>open(g)}><Cover game={g}/><div className="game-details"><h3>{g.title}</h3><p>{g.platform}</p><div className="progress-line"><span style={{width:`${g.progress}%`}}/></div><div><small>{g.progress}% complete</small><small>{g.hours} hrs</small></div></div></button>)}{!games.length&&<p className="empty">No games match this filter.</p>}</div>}
-function Progress({game}:{game:Game}){return <div className="feature-progress"><div><span>Progress</span><strong>{game.progress}%</strong></div><div className="progress-line"><span style={{width:`${game.progress}%`}}/></div><p>{game.hours} hours played <b>•</b> Last played {game.last}</p></div>}
-function Insights({stats}:{stats:Stats}){return <div className="insights"><div><span>Favorite genre</span><strong>{stats.fav}</strong><small>Based on your library</small></div><div><span>Most played platform</span><strong>{stats.platform}</strong><small>Where you spend the most time</small></div><div><span>Completion percentage</span><strong>{stats.pct}%</strong><small>{stats.completed} of {stats.total} games completed</small></div></div>}
-function Library({list,genre,setGenre,query,setQuery,sort,setSort,open,add}:{list:Game[];genre:string;setGenre:(x:string)=>void;query:string;setQuery:(x:string)=>void;sort:string;setSort:(x:string)=>void;open:(g:Game)=>void;add:()=>void}){return <><div className="search-row"><Search query={query} setQuery={setQuery}/><button className="add-game" onClick={add}><Icon name="plus" size={18}/>Add Game</button></div><Genres genre={genre} setGenre={setGenre}/><div className="section-heading"><div><h2>Your Library</h2><p>{list.length} games found</p></div><label className="sort"><Icon name="sort" size={15}/><select value={sort} onChange={e=>setSort(e.target.value)}><option value="recent">Recently played</option><option value="title">Title A–Z</option><option value="hours">Most played</option><option value="progress">Completion</option></select></label></div><GameGrid games={list} open={open}/></>}
-function Friends({friends,open,add,remove}:{friends:Friend[];open:(f:Friend)=>void;add:()=>void;remove:(id:string)=>void}){return <><div className="section-heading page-action"><div><h2>Friends</h2><p>See what your friends are playing</p></div><button className="add-game" onClick={add}><Icon name="plus" size={18}/>Add Friend</button></div><div className="friends-grid">{friends.map(f=><article className="friend-card" key={f.id}><button className="friend-main" onClick={()=>open(f)}><div className="friend-avatar">{f.initials}<i className={f.online?"online":""}/></div><h3>{f.name}</h3><p>{f.online?`Playing ${f.playing}`:`Last played ${f.last}`}</p></button><div className="friend-info"><span>Favourite: <b>{f.favorite}</b></span><span>{f.owned} games · {f.completed} completed</span></div><div className="friend-buttons"><button onClick={()=>open(f)}>View profile</button><button className="danger-link" onClick={()=>remove(f.id)}>Remove</button></div></article>)}{!friends.length&&<p className="empty">Your friends list is empty. Add someone to start sharing recommendations.</p>}</div></>}
-function Statistics({stats,games,achievements}:{stats:Stats;games:Game[];achievements:boolean}){if(achievements)return <><div className="section-heading"><div><h2>Achievements</h2><p>Your collection progress</p></div></div><div className="achievement-list">{games.map(g=><article key={g.id} className="achievement-row"><Cover game={g}/><div><h3>{g.title}</h3><p>{g.achievements} of {g.achievementTotal} achievements unlocked</p><div className="progress-line"><span style={{width:`${g.achievements/g.achievementTotal*100}%`}}/></div></div><strong>{Math.round(g.achievements/g.achievementTotal*100)}%</strong></article>)}</div></>;return <><StatCards stats={stats}/><div className="section-heading"><div><h2>Library insights</h2><p>Updated automatically from your games</p></div></div><Insights stats={stats}/><div className="chart-card"><h3>Hours by game</h3>{games.slice().sort((a,b)=>b.hours-a.hours).slice(0,6).map(g=><div className="bar" key={g.id}><span>{g.title}</span><i><b style={{width:`${Math.max(8,g.hours/Math.max(...games.map(x=>x.hours))*100)}%`}}/></i><em>{g.hours}h</em></div>)}</div></>}
-function Profile({settings,stats,games,edit}:{settings:Settings;stats:Stats;games:Game[];edit:()=>void}){return <div className="profile-page"><div className="profile-hero"><div className="avatar alex profile-avatar">{settings.avatar}</div><div><h2>{settings.username}</h2><p>Game Vault collector · Level 24</p></div><button onClick={edit}><Icon name="edit" size={15}/>Edit profile</button></div><StatCards stats={stats}/><div className="section-heading"><div><h2>Recently played</h2></div></div><GameGrid games={games.slice(0,4)} open={()=>{}}/></div>}
-function SettingsPage({settings,edit}:{settings:Settings;edit:()=>void}){return <div className="settings-page"><h2>Personalize Game Vault</h2><p>Profile, appearance, and data are stored on this device.</p><div className="settings-summary"><div className="avatar alex large">{settings.avatar}</div><div><strong>{settings.username}</strong><span>{settings.dark?"Dark":"Light"} theme · {settings.wallpaper} background</span></div><button className="add-game" onClick={edit}>Edit settings</button></div></div>}
-
-function Modal({kind,close,setGames,setFriends,settings,setSettings,toast}:{kind:"add"|"settings"|"friend";close:()=>void;games:Game[];setGames:Dispatch<SetStateAction<Game[]>>;friends:Friend[];setFriends:Dispatch<SetStateAction<Friend[]>>;settings:Settings;setSettings:Dispatch<SetStateAction<Settings>>;toast:(message:string)=>void}){const [title,setTitle]=useState(""),[genre,setGenre]=useState("Adventure"),[platform,setPlatform]=useState("PC"),[name,setName]=useState(""),[draft,setDraft]=useState(settings);const submit=(e:React.FormEvent)=>{e.preventDefault();if(kind==="add"){if(!title.trim())return;setGames(x=>[...x,{id:crypto.randomUUID(),title:title.trim(),genre,platform,hours:0,progress:0,last:"Never",art:"animal",icon:"GV",description:"No description added yet.",achievements:0,achievementTotal:1,rating:0,notes:""}]);toast("Game added to your vault")}if(kind==="friend"){if(!name.trim())return;setFriends(x=>[...x,{id:crypto.randomUUID(),name:name.trim(),initials:initials(name),online:false,playing:"",favorite:"Not set",owned:0,completed:0,hundred:0,last:"Never",recommendation:{game:"No recommendation yet",rating:0,review:""}}]);toast("Friend request sent")}if(kind==="settings"){setSettings({...draft,avatar:initials(draft.username)});toast("Settings saved")}close()};return <div className="modal-backdrop" onClick={close}><form className="settings-modal" onSubmit={submit} onClick={e=>e.stopPropagation()}><button type="button" className="modal-close" onClick={close}><Icon name="close"/></button>{kind==="add"&&<><p className="eyebrow">YOUR LIBRARY</p><h2>Add a game</h2><label className="setting-label">Game title<input required autoFocus value={title} onChange={e=>setTitle(e.target.value)} placeholder="e.g. Hollow Knight"/></label><label className="setting-label">Genre<select value={genre} onChange={e=>setGenre(e.target.value)}>{genres.slice(1).map(g=><option key={g}>{g}</option>)}</select></label><label className="setting-label">Platform<select value={platform} onChange={e=>setPlatform(e.target.value)}>{["PC","PlayStation 5","Xbox Series X","Nintendo Switch"].map(x=><option key={x}>{x}</option>)}</select></label></>}{kind==="friend"&&<><p className="eyebrow">FRIENDS</p><h2>Add a friend</h2><label className="setting-label">Friend username<input required autoFocus value={name} onChange={e=>setName(e.target.value)} placeholder="Enter a display name"/></label><p className="help">This creates a local friend request in your vault.</p></>}{kind==="settings"&&<><p className="eyebrow">GAME VAULT PROFILE</p><h2>Settings</h2><div className="profile-edit"><div className="avatar alex large">{initials(draft.username)}</div></div><label className="setting-label">Display name<input value={draft.username} onChange={e=>setDraft({...draft,username:e.target.value})}/></label><div className="theme-setting"><div><strong>Appearance</strong><p>Choose your preferred theme</p></div><button type="button" className="theme-toggle" onClick={()=>setDraft({...draft,dark:!draft.dark})}><span className={!draft.dark?"on":""}><Icon name="sun" size={16}/>Light</span><span className={draft.dark?"on":""}><Icon name="moon" size={16}/>Dark</span></button></div><label className="setting-label">Background wallpaper<select value={draft.wallpaper} onChange={e=>setDraft({...draft,wallpaper:e.target.value})}><option value="none">Default</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option></select></label></> }<div className="setting-foot"><button type="button" className="cancel" onClick={close}>Cancel</button><button className="save"><Icon name="check" size={16}/>Save changes</button></div></form></div>}
-function GameDetail({game,close,update,remove}:{game:Game;close:()=>void;update:(g:Game)=>void;remove:()=>void}){const [draft,setDraft]=useState(game);return <div className="modal-backdrop" onClick={close}><article className="game-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={close}><Icon name="close"/></button><Cover game={draft} feature/><div className="detail-content"><div className="detail-title"><div><p className="eyebrow">{draft.genre} · {draft.platform}</p><h2>{draft.title}</h2></div><button className="danger-link" onClick={remove}><Icon name="trash" size={16}/>Remove</button></div><p className="description">{draft.description}</p><div className="detail-stats"><span><b>{draft.hours}h</b>played</span><span><b>{draft.last}</b>last played</span><span><b>{draft.achievements}/{draft.achievementTotal}</b>achievements</span></div><label className="setting-label">Completion <b>{draft.progress}%</b><input type="range" min="0" max="100" value={draft.progress} onChange={e=>setDraft({...draft,progress:Number(e.target.value)})}/></label><label className="setting-label">Personal rating <div className="stars">{[1,2,3,4,5].map(n=><button type="button" key={n} onClick={()=>setDraft({...draft,rating:n})}>{n<=draft.rating?"★":"☆"}</button>)}</div></label><label className="setting-label">Notes<textarea value={draft.notes} onChange={e=>setDraft({...draft,notes:e.target.value})}/></label><div className="setting-foot"><button className="cancel" onClick={close}>Cancel</button><button className="save" onClick={()=>{update({...draft,last:"Just now"});close()}}><Icon name="check" size={16}/>Save game</button></div></div></article></div>}
-function FriendProfile({friend,close,remove}:{friend:Friend;close:()=>void;remove:()=>void}){return <div className="modal-backdrop" onClick={close}><article className="game-modal friend-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={close}><Icon name="close"/></button><div className="friend-profile-head"><div className="friend-avatar">{friend.initials}<i className={friend.online?"online":""}/></div><div><p className="eyebrow">{friend.online?"ONLINE NOW":"OFFLINE"}</p><h2>{friend.name}</h2><p>{friend.online?`Playing ${friend.playing}`:`Last played ${friend.last}`}</p></div></div><div className="friend-stats"><span><b>{friend.owned}</b>games owned</span><span><b>{friend.completed}</b>completed</span><span><b>{friend.hundred}</b>100% complete</span></div><div className="recommend"><p className="eyebrow">RECOMMENDATION</p><h3>{friend.recommendation.game} <span>{"★".repeat(friend.recommendation.rating)}</span></h3><p>“{friend.recommendation.review}”</p></div><div className="setting-foot"><button className="danger-link" onClick={remove}><Icon name="trash" size={16}/>Remove friend</button><button className="save" onClick={close}>Done</button></div></article></div>}

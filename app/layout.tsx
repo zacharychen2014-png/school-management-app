@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Game Vault",
-  description: "A personal game library dashboard",
+  title: "Alex Rivera | Oceanic Portfolio",
+  description: "A modern, immersive developer portfolio with an ocean-at-night atmosphere.",
 };
 
 export default function RootLayout({
