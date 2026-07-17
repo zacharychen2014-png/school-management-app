@@ -179,8 +179,3 @@ export default function Home() {
     </main>
   );
 }
-    <section className="section gallery"><div className="section-head reveal"><p className="eyebrow">IN THE WILD</p><h2>Little glimpses<br />of the <em>work.</em></h2></div><div className="gallery-grid reveal">{"tall", "wide", "small", "small two", "wide last"}.map((c, i) => <div key={c} className={`gallery-card ${c}`}><span>{["01 / TIDEBOARD", "02 / LUNARIA", "03 / WAYPOINT", "04 / EDITORIAL", "05 / OCEAN NOTES"][i]}</span><div /></div>)</div></section>
-
-    <section className="contact" id="contact"><div className="contact-glow" /><div className="contact-copy reveal"><p className="eyebrow">SEND A SIGNAL</p><h2>Let&apos;s make<br />some <em>waves.</em></h2><p>Have an idea, a collaboration, or just want to say hello? My inbox is always open.</p><a href="mailto:hello@novamakes.dev">hello@novamakes.dev <Arrow /></a><div className="socials"><a href="https://github.com">GitHub</a><a href="https://linkedin.com">LinkedIn</a><a href="https://instagram.com">Instagram</a></div></div><form className="contact-form reveal" onSubmit={submit}><label>Your name<input required placeholder="What should I call you?" /></label><label>Email address<input required type="email" placeholder="you@example.com" /></label><label>Tell me a little about it<textarea required placeholder="A new project, a wild idea..." /></label><button className="primary" type="submit">{sent ? "Message sent — thank you!" : "Send it into the sea"} <Arrow /></button></form><footer>© 2025 NOVA. MADE UNDER A MOONLIT SKY. <a href="#top">BACK TO THE TOP ↑</a></footer></section>
-  </main>;
-}
