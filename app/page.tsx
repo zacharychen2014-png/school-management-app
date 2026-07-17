@@ -6,7 +6,6 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 const gameVaultUrl =
   "https://school-management-n8nt6svh1-zacharychen2014-4965s-projects.vercel.app/";
 
-That's it.
 
 const projects = [
   { n: "01", title: "GameVault", type: "Web project", desc: "A project I made and wanted to feature here so it can be opened directly from this site.", tech: ["Next.js", "TypeScript"], color: "a", link: "Open project", url: gameVaultUrl },
